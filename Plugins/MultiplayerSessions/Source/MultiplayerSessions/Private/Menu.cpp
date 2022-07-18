@@ -8,8 +8,9 @@
 #include "Interfaces/OnlineSessionInterface.h"
 #include "OnlineSubsystem.h"
 
-void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString TypeOfMatch)
+void UMenu::MenuSetup(int32 NumberOfPublicConnections, FString TypeOfMatch, FString LobbyPath)
 {
+	PathToLobby = FString::Printf(TEXT("%s?listen"), *LobbyPath);
 	/// Set member variables for the menu; NumPublicConnections and MatchType
 	NumPublicConnections = NumberOfPublicConnections;
 	MatchType = TypeOfMatch;
@@ -124,7 +125,7 @@ void UMenu::OnCreateSession(bool bWasSuccessful)
 		UWorld* World = GetWorld();
 		if (World)
 		{
-			World->ServerTravel(FString("/Game/Maps/Lobby?listen"));
+			World->ServerTravel(PathToLobby);
 		}
 		
 	}
@@ -140,6 +141,7 @@ void UMenu::OnCreateSession(bool bWasSuccessful)
 				FString(TEXT("Session Creation Failed!"))
 			);
 		}
+		HostButton->SetIsEnabled(true);
 	}
 }
 
@@ -149,16 +151,6 @@ void UMenu::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SearchResul
 	/// If it is not valid, then we will simply return out of the function
 	if (MultiplayerSessionsSubsystem == nullptr)
 	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(
-				-2,
-				15.f,
-				FColor::Red,
-				FString::Printf(TEXT("Multiplayer Session Subsystem is a nullptr!"))
-			);
-		}
-
 		return;
 	}
 	
@@ -177,28 +169,9 @@ void UMenu::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SearchResul
 		/// Get the match type, using the Get function on the SessionSearch
 		Result.Session.SessionSettings.Get(FName("MatchType"), SettingsValue);
 		
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(
-				-1,
-				15.f,
-				FColor::Cyan,
-				FString::Printf(TEXT("Found Session Id: %s, User: %s"), *Id, *User)
-			);
-		}
-		
 		/// Check if the match type is the same as the match type we are looking for
 		if (SettingsValue == MatchType)
 		{
-			if (GEngine)
-			{
-				GEngine->AddOnScreenDebugMessage(
-					-1,
-					15.f,
-					FColor::Cyan,
-					FString::Printf(TEXT("Found Match Type: %s"), *MatchType)
-				);
-			}
 			/// Once we found a session that meets out search criteria
 			/// Call JoinSession on the MultiplayerSessionsSubsytem, passing in the found session Result
 			/// Don't need to continue looping through the searchResults, so return out of this function
@@ -206,6 +179,21 @@ void UMenu::OnFindSessions(const TArray<FOnlineSessionSearchResult>& SearchResul
 			return;
 		}
 	}
+	
+	if (!bWasSuccessful || SearchResults.Num() == 0)
+	{
+		/// Display a message to the user that the session was not found
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+				-1,
+				15.f,
+				FColor::Red,
+				FString(TEXT("No Sessions Found!"))
+			);
+		}
+		JoinButton->SetIsEnabled(true);
+	}	
 }
 
 void UMenu::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
@@ -235,15 +223,15 @@ void UMenu::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
 			/// Get Address or ResolvedConnectString
 			SessionInterface->GetResolvedConnectString(NAME_GameSession, Address);
 
-			if (GEngine)
-			{
-				GEngine->AddOnScreenDebugMessage(
-					-1,
-					15.f,
-					FColor::Yellow,
-					FString::Printf(TEXT("Connect String: %s"), *Address)
-				);
-			}
+			//if (GEngine)
+			//{
+			//	GEngine->AddOnScreenDebugMessage(
+			//		-1,
+			//		15.f,
+			//		FColor::Yellow,
+			//		FString::Printf(TEXT("Connect String: %s"), *Address)
+			//	);
+			//}
 
 			/// Get the player controller by using GetGameInstance
 			APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
@@ -252,31 +240,16 @@ void UMenu::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
 			/// Call the ServerTravel function on the PlayerController, passing in the Address and the TravelType
 			if (PlayerController)
 			{
-				if (GEngine)
-				{
-					GEngine->AddOnScreenDebugMessage(
-						-1,
-						15.f,
-						FColor::Cyan,
-						FString::Printf(TEXT("PlayerController Found!"))
-					);
-				}
+
 				
 				PlayerController->ClientTravel(Address, ETravelType::TRAVEL_Absolute);
 			}
-			else
-			{
-				if (GEngine)
-				{
-					GEngine->AddOnScreenDebugMessage(
-						-1,
-						15.f,
-						FColor::Red,
-						FString::Printf(TEXT("PlayerController Not Found!"))
-					);
-				}
-			}
 		}
+	}
+	
+	if (Result != EOnJoinSessionCompleteResult::Success)
+	{
+		JoinButton->SetIsEnabled(true);
 	}
 }
 
@@ -302,7 +275,7 @@ void UMenu::HostButtonClicked()
 			FString(TEXT("Host Button Clicked"))
 		);
 	}*/
-	
+	HostButton->SetIsEnabled(false);
 	/// Check if the multiplayer session subsystem is valid
 	if (MultiplayerSessionsSubsystem)
 	{
@@ -323,6 +296,7 @@ void UMenu::JoinButtonClicked()
 			FString(TEXT("Join Button Clicked"))
 		);
 	}*/
+	JoinButton->SetIsEnabled(false);
 	if (MultiplayerSessionsSubsystem)
 	{
 		/// Find a session, set the max number of players, and set the match type

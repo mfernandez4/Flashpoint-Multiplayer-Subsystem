@@ -76,14 +76,18 @@ AMenuSystemCharacter::AMenuSystemCharacter():
 	if (OnlineSubsystem)
 	{
 		OnlineSessionInterface = OnlineSubsystem->GetSessionInterface();
-
+		
+		/*
 		if (GEngine)
+		{
 			GEngine->AddOnScreenDebugMessage(
 				-1,
 				15.f,
 				FColor::Blue,
 				FString::Printf(TEXT("Found subsystem %s"), *OnlineSubsystem->GetSubsystemName().ToString())
 			);
+		}*/
+		
 	}
 }
 
@@ -131,15 +135,15 @@ void AMenuSystemCharacter::CreateGameSession()
 	if (ExistingSession != nullptr)
 	{
 		OnlineSessionInterface->DestroySession(NAME_GameSession);
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(
-				-1,
-				15.f,
-				FColor::Blue,
-				FString::Printf(TEXT("Destroy Existing Game Session"))
-			);
-		}
+		//if (GEngine)
+		//{
+		//	GEngine->AddOnScreenDebugMessage(
+		//		-1,
+		//		15.f,
+		//		FColor::Blue,
+		//		FString::Printf(TEXT("Destroy Existing Game Session"))
+		//	);
+		//}
 	}
 
 	/// Once we create a session, we need to add the CreateSessionCompleteDelegate to the AddOnCreateSessionCompleteDelegate_Handle list
